@@ -41,5 +41,68 @@ const validate = (fields) => {
 };
 
 // BEGIN
+export default () => {
+  const form = document.querySelector('[data-form="sign-up"]');
+  const submitButton = form.querySelector('input[type="submit"]');
 
+  const initialState = {
+    name: '',
+    email: '',
+    password: '',
+    passwordConfirmation: '',
+    errors: {},
+    valid: false,
+    submitting: false,
+  };
+
+  const state = onChange(initialState, (path) => {
+    const { errors, submitting, valid } = state;
+
+    if (path === 'errors') {
+      Object.keys(errors).forEach((key) => {
+        const input = form.querySelector(`[name="${key}"]`);
+        const feedback = input.nextElementSibling;
+        if (errors[key]) {
+          input.classList.add('is-invalid');
+          feedback.textContent = errors[key].message;
+        } else {
+          input.classList.remove('is-invalid');
+          feedback.textContent = '';
+        }
+      });
+    }
+
+    if (path === 'submitting') {
+      submitButton.disabled = submitting;
+    }
+
+    if (path === 'valid') {
+      submitButton.disabled = !valid || submitting;
+    }
+  });
+
+  form.addEventListener('input', (event) => {
+    const { name, value } = event.target;
+    state[name] = value;
+
+    const currentErrors = validate(state);
+    state.errors = currentErrors;
+    state.valid = isEmpty(currentErrors);
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    state.submitting = true;
+
+    try {
+      await axios.post(routes.usersPath(), state);
+      form.outerHTML = '<div data-container="sign-up">User Created!</div>';
+    } catch (error) {
+      console.error(error);
+    } finally {
+      state.submitting = false;
+    }
+  });
+};
 // END
